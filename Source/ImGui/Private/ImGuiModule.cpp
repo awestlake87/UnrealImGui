@@ -9,26 +9,23 @@
 #include "Utilities/WorldContextIndex.h"
 
 #if WITH_EDITOR
-#include "ImGuiImplementation.h"
 #include "Editor/ImGuiEditor.h"
+#include "ImGuiImplementation.h"
+
 #endif
 
 #include <Interfaces/IPluginManager.h>
 
-
 #define LOCTEXT_NAMESPACE "FImGuiModule"
 
+struct EDelegateCategory {
+    enum {
+        // Default per-context draw events.
+        Default,
 
-struct EDelegateCategory
-{
-	enum
-	{
-		// Default per-context draw events.
-		Default,
-
-		// Multi-context draw event defined in context manager.
-		MultiContext
-	};
+        // Multi-context draw event defined in context manager.
+        MultiContext
+    };
 };
 
 FImGuiModuleManager* ImGuiModuleManager = nullptr;
@@ -40,222 +37,261 @@ static FImGuiEditor* ImGuiEditor = nullptr;
 #if IMGUI_WITH_OBSOLETE_DELEGATES
 
 #if WITH_EDITOR
-FImGuiDelegateHandle FImGuiModule::AddEditorImGuiDelegate(const FImGuiDelegate& Delegate)
-{
-	return { FImGuiDelegatesContainer::Get().OnWorldDebug(Utilities::EDITOR_CONTEXT_INDEX).Add(Delegate),
-		EDelegateCategory::Default, Utilities::EDITOR_CONTEXT_INDEX };
+FImGuiDelegateHandle
+FImGuiModule::AddEditorImGuiDelegate(const FImGuiDelegate& Delegate) {
+    return {FImGuiDelegatesContainer::Get()
+                .OnWorldDebug(Utilities::EDITOR_CONTEXT_INDEX)
+                .Add(Delegate),
+            EDelegateCategory::Default, Utilities::EDITOR_CONTEXT_INDEX};
 }
 #endif
 
-FImGuiDelegateHandle FImGuiModule::AddWorldImGuiDelegate(const FImGuiDelegate& Delegate)
-{
-	const int32 ContextIndex = Utilities::GetWorldContextIndex((UWorld*)GWorld);
-	return { FImGuiDelegatesContainer::Get().OnWorldDebug(ContextIndex).Add(Delegate), EDelegateCategory::Default, ContextIndex };
+FImGuiDelegateHandle
+FImGuiModule::AddWorldImGuiDelegate(const FImGuiDelegate& Delegate) {
+    const int32 ContextIndex = Utilities::GetWorldContextIndex((UWorld*)GWorld);
+    return {FImGuiDelegatesContainer::Get()
+                .OnWorldDebug(ContextIndex)
+                .Add(Delegate),
+            EDelegateCategory::Default, ContextIndex};
 }
 
-FImGuiDelegateHandle FImGuiModule::AddWorldImGuiDelegate(const UWorld* World, const FImGuiDelegate& Delegate)
-{
-	const int32 ContextIndex = Utilities::GetWorldContextIndex(World);
-	return { FImGuiDelegatesContainer::Get().OnWorldDebug(ContextIndex).Add(Delegate), EDelegateCategory::Default, ContextIndex };
+FImGuiDelegateHandle
+FImGuiModule::AddWorldImGuiDelegate(const UWorld* World,
+                                    const FImGuiDelegate& Delegate) {
+    const int32 ContextIndex = Utilities::GetWorldContextIndex(World);
+    return {FImGuiDelegatesContainer::Get()
+                .OnWorldDebug(ContextIndex)
+                .Add(Delegate),
+            EDelegateCategory::Default, ContextIndex};
 }
 
-FImGuiDelegateHandle FImGuiModule::AddMultiContextImGuiDelegate(const FImGuiDelegate& Delegate)
-{
-	return { FImGuiDelegatesContainer::Get().OnMultiContextDebug().Add(Delegate), EDelegateCategory::MultiContext };
+FImGuiDelegateHandle
+FImGuiModule::AddMultiContextImGuiDelegate(const FImGuiDelegate& Delegate) {
+    return {FImGuiDelegatesContainer::Get().OnMultiContextDebug().Add(Delegate),
+            EDelegateCategory::MultiContext};
 }
 
-void FImGuiModule::RemoveImGuiDelegate(const FImGuiDelegateHandle& Handle)
-{
-	if (Handle.Category == EDelegateCategory::MultiContext)
-	{
-		FImGuiDelegatesContainer::Get().OnMultiContextDebug().Remove(Handle.Handle);
-	}
-	else
-	{
-		FImGuiDelegatesContainer::Get().OnWorldDebug(Handle.Index).Remove(Handle.Handle);
-	}
+void FImGuiModule::RemoveImGuiDelegate(const FImGuiDelegateHandle& Handle) {
+    if (Handle.Category == EDelegateCategory::MultiContext) {
+        FImGuiDelegatesContainer::Get().OnMultiContextDebug().Remove(
+            Handle.Handle);
+    } else {
+        FImGuiDelegatesContainer::Get()
+            .OnWorldDebug(Handle.Index)
+            .Remove(Handle.Handle);
+    }
 }
 
 #endif // IMGUI_WITH_OBSOLETE_DELEGATES
 
-FImGuiTextureHandle FImGuiModule::FindTextureHandle(const FName& Name)
-{
-	const TextureIndex Index = ImGuiModuleManager->GetTextureManager().FindTextureIndex(Name);
-	return (Index != INDEX_NONE) ? FImGuiTextureHandle{ Name, ImGuiInterops::ToImTextureID(Index) } : FImGuiTextureHandle{};
+FImGuiTextureHandle FImGuiModule::FindTextureHandle(const FName& Name) {
+    const TextureIndex Index =
+        ImGuiModuleManager->GetTextureManager().FindTextureIndex(Name);
+    return (Index != INDEX_NONE)
+               ? FImGuiTextureHandle{Name, ImGuiInterops::ToImTextureID(Index)}
+               : FImGuiTextureHandle{};
 }
 
-FImGuiTextureHandle FImGuiModule::RegisterTexture(const FName& Name, class UTexture* Texture, bool bMakeUnique)
-{
-	FTextureManager& TextureManager = ImGuiModuleManager->GetTextureManager();
+FImGuiTextureHandle FImGuiModule::RegisterTexture(const FName& Name,
+                                                  class UTexture* Texture,
+                                                  bool bMakeUnique) {
+    FTextureManager& TextureManager = ImGuiModuleManager->GetTextureManager();
 
-	checkf(!bMakeUnique || TextureManager.FindTextureIndex(Name) == INDEX_NONE,
-		TEXT("Trying to register a texture with a name '%s' that is already used. Chose a different name ")
-		TEXT("or use bMakeUnique false, to update existing texture resources."), *Name.ToString());
+    checkf(
+        !bMakeUnique || TextureManager.FindTextureIndex(Name) == INDEX_NONE,
+        TEXT("Trying to register a texture with a name '%s' that is already "
+             "used. Chose a different name ") TEXT(
+            "or use bMakeUnique false, to update existing texture resources."),
+        *Name.ToString());
 
-	const TextureIndex Index = TextureManager.CreateTextureResources(Name, Texture);
-	return FImGuiTextureHandle{ Name, ImGuiInterops::ToImTextureID(Index) };
+    const TextureIndex Index =
+        TextureManager.CreateTextureResources(Name, Texture);
+    return FImGuiTextureHandle{Name, ImGuiInterops::ToImTextureID(Index)};
 }
 
-void FImGuiModule::ReleaseTexture(const FImGuiTextureHandle& Handle)
-{
-	if (Handle.IsValid())
-	{
-		ImGuiModuleManager->GetTextureManager().ReleaseTextureResources(ImGuiInterops::ToTextureIndex(Handle.GetTextureId()));
-	}
+void FImGuiModule::ReleaseTexture(const FImGuiTextureHandle& Handle) {
+    if (Handle.IsValid()) {
+        ImGuiModuleManager->GetTextureManager().ReleaseTextureResources(
+            ImGuiInterops::ToTextureIndex(Handle.GetTextureId()));
+    }
 }
 
-void FImGuiModule::RebuildFontAtlas()
-{
-	if (ImGuiModuleManager)
-	{
-		ImGuiModuleManager->RebuildFontAtlas();
-	}
+void FImGuiModule::RebuildFontAtlas() {
+    if (ImGuiModuleManager) {
+        ImGuiModuleManager->RebuildFontAtlas();
+    }
 }
 
-void FImGuiModule::StartupModule()
-{
-	// Initialize handles to allow cross-module redirections. Other handles will always look for parents in the active
-	// module, which means that we can only redirect to started modules. We don't have to worry about self-referencing
-	// as local handles are guaranteed to be constructed before initializing pointers.
-	// This supports in-editor recompilation and hot-reloading after compiling from the command line. The latter method
-	// theoretically doesn't support plug-ins and will not load re-compiled module, but its handles will still redirect
-	// to the active one.
+void FImGuiModule::StartupModule() {
+    // Initialize handles to allow cross-module redirections. Other handles will
+    // always look for parents in the active module, which means that we can
+    // only redirect to started modules. We don't have to worry about
+    // self-referencing as local handles are guaranteed to be constructed before
+    // initializing pointers. This supports in-editor recompilation and
+    // hot-reloading after compiling from the command line. The latter method
+    // theoretically doesn't support plug-ins and will not load re-compiled
+    // module, but its handles will still redirect to the active one.
 
 #if WITH_EDITOR
-	ImGuiContextHandle = &ImGuiImplementation::GetContextHandle();
-	DelegatesContainerHandle = &FImGuiDelegatesContainer::GetHandle();
+    ImGuiContextHandle = &ImGuiImplementation::GetContextHandle();
+    DelegatesContainerHandle = &FImGuiDelegatesContainer::GetHandle();
 #endif
 
-	// Create managers that implements module logic.
+    // Create managers that implements module logic.
 
-	checkf(!ImGuiModuleManager, TEXT("Instance of the ImGui Module Manager already exists. Instance should be created only during module startup."));
-	ImGuiModuleManager = new FImGuiModuleManager();
+    checkf(!ImGuiModuleManager,
+           TEXT("Instance of the ImGui Module Manager already exists. Instance "
+                "should be created only during module startup."));
+    ImGuiModuleManager = new FImGuiModuleManager();
 
 #if WITH_EDITOR
-	checkf(!ImGuiEditor, TEXT("Instance of the ImGui Editor already exists. Instance should be created only during module startup."));
-	ImGuiEditor = new FImGuiEditor();
+    checkf(!ImGuiEditor,
+           TEXT("Instance of the ImGui Editor already exists. Instance should "
+                "be created only during module startup."));
+    ImGuiEditor = new FImGuiEditor();
 #endif
 }
 
-void FImGuiModule::ShutdownModule()
-{
-	// In editor store data that we want to move to hot-reloaded module.
+void FImGuiModule::ShutdownModule() {
+    // In editor store data that we want to move to hot-reloaded module.
 
 #if WITH_EDITOR
-	static bool bMoveProperties = true;
-	static FImGuiModuleProperties PropertiesToMove = ImGuiModuleManager->GetProperties();
+    static bool bMoveProperties = true;
+    static FImGuiModuleProperties PropertiesToMove =
+        ImGuiModuleManager->GetProperties();
 #endif
 
-	// Before we shutdown we need to delete managers that will do all the necessary cleanup.
+    // Before we shutdown we need to delete managers that will do all the
+    // necessary cleanup.
 
 #if WITH_EDITOR
-	checkf(ImGuiEditor, TEXT("Null ImGui Editor. ImGui editor instance should be deleted during module shutdown."));
-	delete ImGuiEditor;
-	ImGuiEditor = nullptr;
+    checkf(ImGuiEditor, TEXT("Null ImGui Editor. ImGui editor instance should "
+                             "be deleted during module shutdown."));
+    delete ImGuiEditor;
+    ImGuiEditor = nullptr;
 #endif
 
-	checkf(ImGuiModuleManager, TEXT("Null ImGui Module Manager. Module manager instance should be deleted during module shutdown."));
-	delete ImGuiModuleManager;
-	ImGuiModuleManager = nullptr;
+    checkf(ImGuiModuleManager,
+           TEXT("Null ImGui Module Manager. Module manager instance should be "
+                "deleted during module shutdown."));
+    delete ImGuiModuleManager;
+    ImGuiModuleManager = nullptr;
 
 #if WITH_EDITOR
-	// When shutting down we leave the global ImGui context pointer and handle pointing to resources that are already
-	// deleted. This can cause troubles after hot-reload when code in other modules calls ImGui interface functions
-	// which are statically bound to the obsolete module. To keep ImGui code functional we can redirect context handle
-	// to point to the new module.
+    // When shutting down we leave the global ImGui context pointer and handle
+    // pointing to resources that are already deleted. This can cause troubles
+    // after hot-reload when code in other modules calls ImGui interface
+    // functions which are statically bound to the obsolete module. To keep
+    // ImGui code functional we can redirect context handle to point to the new
+    // module.
 
-	// When shutting down during hot-reloading, we might want to rewire handles used in statically bound functions
-	// or move data to a new module.
+    // When shutting down during hot-reloading, we might want to rewire handles
+    // used in statically bound functions or move data to a new module.
 
-	FModuleManager::Get().OnModulesChanged().AddLambda([this] (FName Name, EModuleChangeReason Reason)
-	{
-		if (Reason == EModuleChangeReason::ModuleLoaded && Name == "ImGui")
-		{
-			FImGuiModule& LoadedModule = FImGuiModule::Get();
-			if (&LoadedModule != this)
-			{
-				// Statically bound functions can be bound to the obsolete module, so we need to manually redirect.
+    FModuleManager::Get().OnModulesChanged().AddLambda(
+        [this](FName Name, EModuleChangeReason Reason) {
+            if (Reason == EModuleChangeReason::ModuleLoaded &&
+                Name == "ImGui") {
+                FImGuiModule& LoadedModule = FImGuiModule::Get();
+                if (&LoadedModule != this) {
+                    // Statically bound functions can be bound to the obsolete
+                    // module, so we need to manually redirect.
 
-				if (LoadedModule.ImGuiContextHandle)
-				{
-					ImGuiImplementation::SetParentContextHandle(*LoadedModule.ImGuiContextHandle);
-				}
+                    if (LoadedModule.ImGuiContextHandle) {
+                        ImGuiImplementation::SetParentContextHandle(
+                            *LoadedModule.ImGuiContextHandle);
+                    }
 
-				if (LoadedModule.DelegatesContainerHandle)
-				{
-					FImGuiDelegatesContainer::MoveContainer(*LoadedModule.DelegatesContainerHandle);
-				}
+                    if (LoadedModule.DelegatesContainerHandle) {
+                        FImGuiDelegatesContainer::MoveContainer(
+                            *LoadedModule.DelegatesContainerHandle);
+                    }
 
-				if (bMoveProperties)
-				{
-					bMoveProperties = false;
-					LoadedModule.SetProperties(PropertiesToMove);
-				}
-			}
-		}
-	});
+                    if (bMoveProperties) {
+                        bMoveProperties = false;
+                        LoadedModule.SetProperties(PropertiesToMove);
+                    }
+                }
+            }
+        });
 #endif // WITH_EDITOR
 }
 
 #if WITH_EDITOR
-void FImGuiModule::SetProperties(const FImGuiModuleProperties& Properties)
-{
-	ImGuiModuleManager->GetProperties() = Properties;
+void FImGuiModule::SetProperties(const FImGuiModuleProperties& Properties) {
+    ImGuiModuleManager->GetProperties() = Properties;
 }
 #endif
 
-FImGuiModuleProperties& FImGuiModule::GetProperties()
-{
-	return ImGuiModuleManager->GetProperties();
+FImGuiModuleProperties& FImGuiModule::GetProperties() {
+    return ImGuiModuleManager->GetProperties();
 }
 
-const FImGuiModuleProperties& FImGuiModule::GetProperties() const
-{
-	return ImGuiModuleManager->GetProperties();
+const FImGuiModuleProperties& FImGuiModule::GetProperties() const {
+    return ImGuiModuleManager->GetProperties();
 }
 
-bool FImGuiModule::IsInputMode() const
-{
-	return ImGuiModuleManager && ImGuiModuleManager->GetProperties().IsInputEnabled();
+bool FImGuiModule::IsInputMode() const {
+    return ImGuiModuleManager &&
+           ImGuiModuleManager->GetProperties().IsInputEnabled();
 }
 
-void FImGuiModule::SetInputMode(bool bEnabled)
-{
-	if (ImGuiModuleManager)
-	{
-		ImGuiModuleManager->GetProperties().SetInputEnabled(bEnabled);
-	}
+void FImGuiModule::SetInputMode(bool bEnabled) {
+    if (ImGuiModuleManager) {
+        ImGuiModuleManager->GetProperties().SetInputEnabled(bEnabled);
+    }
 }
 
-void FImGuiModule::ToggleInputMode()
-{
-	if (ImGuiModuleManager)
-	{
-		ImGuiModuleManager->GetProperties().ToggleInput();
-	}
+void FImGuiModule::ToggleInputMode() {
+    if (ImGuiModuleManager) {
+        ImGuiModuleManager->GetProperties().ToggleInput();
+    }
 }
 
-bool FImGuiModule::IsShowingDemo() const
-{
-	return ImGuiModuleManager && ImGuiModuleManager->GetProperties().ShowDemo();
+bool FImGuiModule::IsShowingDemo() const {
+    return ImGuiModuleManager && ImGuiModuleManager->GetProperties().ShowDemo();
 }
 
-void FImGuiModule::SetShowDemo(bool bShow)
-{
-	if (ImGuiModuleManager)
-	{
-		ImGuiModuleManager->GetProperties().SetShowDemo(bShow);
-	}
+void FImGuiModule::SetShowDemo(bool bShow) {
+    if (ImGuiModuleManager) {
+        ImGuiModuleManager->GetProperties().SetShowDemo(bShow);
+    }
 }
 
-void FImGuiModule::ToggleShowDemo()
-{
-	if (ImGuiModuleManager)
-	{
-		ImGuiModuleManager->GetProperties().ToggleDemo();
-	}
+void FImGuiModule::SetGamepadNavigationEnabled(bool bEnabled) {
+    if (ImGuiModuleManager) {
+        ImGuiModuleManager->GetProperties().SetGamepadNavigationEnabled(
+            bEnabled);
+    }
 }
 
+void FImGuiModule::SetKeyboardNavigationEnabled(bool bEnabled) {
+    if (ImGuiModuleManager) {
+        ImGuiModuleManager->GetProperties().SetKeyboardNavigationEnabled(
+            bEnabled);
+    }
+}
+void FImGuiModule::SetKeyboardInputShared(bool bShared) {
+    if (ImGuiModuleManager) {
+        ImGuiModuleManager->GetProperties().SetKeyboardInputShared(bShared);
+    }
+}
+void FImGuiModule::SetGamepadInputShared(bool bShared) {
+    if (ImGuiModuleManager) {
+        ImGuiModuleManager->GetProperties().SetGamepadInputShared(bShared);
+    }
+}
+void FImGuiModule::SetMouseInputShared(bool bShared) {
+    if (ImGuiModuleManager) {
+        ImGuiModuleManager->GetProperties().SetMouseInputShared(bShared);
+    }
+}
+
+void FImGuiModule::ToggleShowDemo() {
+    if (ImGuiModuleManager) {
+        ImGuiModuleManager->GetProperties().ToggleDemo();
+    }
+}
 
 //----------------------------------------------------------------------------------------------------
 // Runtime loader
@@ -263,41 +299,39 @@ void FImGuiModule::ToggleShowDemo()
 
 #if !WITH_EDITOR && RUNTIME_LOADER_ENABLED
 
-class FImGuiModuleLoader
-{
-	FImGuiModuleLoader()
-	{
-		if (!Load())
-		{
-			FModuleManager::Get().OnModulesChanged().AddRaw(this, &FImGuiModuleLoader::LoadAndRelease);
-		}
-	}
+class FImGuiModuleLoader {
+    FImGuiModuleLoader() {
+        if (!Load()) {
+            FModuleManager::Get().OnModulesChanged().AddRaw(
+                this, &FImGuiModuleLoader::LoadAndRelease);
+        }
+    }
 
-	// For different engine versions.
-	static FORCEINLINE bool IsValid(const TSharedPtr<IModuleInterface>& Ptr) { return Ptr.IsValid(); }
-	static FORCEINLINE bool IsValid(const IModuleInterface* const Ptr) { return Ptr != nullptr; }
+    // For different engine versions.
+    static FORCEINLINE bool IsValid(const TSharedPtr<IModuleInterface>& Ptr) {
+        return Ptr.IsValid();
+    }
+    static FORCEINLINE bool IsValid(const IModuleInterface* const Ptr) {
+        return Ptr != nullptr;
+    }
 
-	bool Load()
-	{
-		return IsValid(FModuleManager::Get().LoadModule(ModuleName));
-	}
+    bool Load() {
+        return IsValid(FModuleManager::Get().LoadModule(ModuleName));
+    }
 
-	void LoadAndRelease(FName Name, EModuleChangeReason Reason)
-	{
-		// Avoid handling own load event.
-		if (Name != ModuleName)
-		{
-			// Try loading until success and then release.
-			if (Load())
-			{
-				FModuleManager::Get().OnModulesChanged().RemoveAll(this);
-			}
-		}
-	}
+    void LoadAndRelease(FName Name, EModuleChangeReason Reason) {
+        // Avoid handling own load event.
+        if (Name != ModuleName) {
+            // Try loading until success and then release.
+            if (Load()) {
+                FModuleManager::Get().OnModulesChanged().RemoveAll(this);
+            }
+        }
+    }
 
-	static FName ModuleName;
+    static FName ModuleName;
 
-	static FImGuiModuleLoader Instance;
+    static FImGuiModuleLoader Instance;
 };
 
 FName FImGuiModuleLoader::ModuleName = "ImGui";
@@ -307,17 +341,17 @@ FImGuiModuleLoader FImGuiModuleLoader::Instance;
 
 #endif // !WITH_EDITOR && RUNTIME_LOADER_ENABLED
 
-
 //----------------------------------------------------------------------------------------------------
-// Partial implementations of other classes that needs access to ImGuiModuleManager
+// Partial implementations of other classes that needs access to
+// ImGuiModuleManager
 //----------------------------------------------------------------------------------------------------
 
-bool FImGuiTextureHandle::HasValidEntry() const
-{
-	const TextureIndex Index = ImGuiInterops::ToTextureIndex(TextureId);
-	return Index != INDEX_NONE && ImGuiModuleManager && ImGuiModuleManager->GetTextureManager().GetTextureName(Index) == Name;
+bool FImGuiTextureHandle::HasValidEntry() const {
+    const TextureIndex Index = ImGuiInterops::ToTextureIndex(TextureId);
+    return Index != INDEX_NONE && ImGuiModuleManager &&
+           ImGuiModuleManager->GetTextureManager().GetTextureName(Index) ==
+               Name;
 }
-
 
 #undef LOCTEXT_NAMESPACE
 

@@ -9,7 +9,7 @@
 #include <Modules/ModuleManager.h>
 
 
-class FImGuiModule : public IModuleInterface
+class IMGUI_API FImGuiModule : public IModuleInterface
 {
 public:
 
@@ -120,57 +120,26 @@ public:
 
 	virtual void RebuildFontAtlas();
 
-	/**
-	 * Get ImGui module properties.
-	 *
-	 * @returns Reference to an instance of ImGui module properties that allows to read and/or modify module state.
-	 */
 	virtual FImGuiModuleProperties& GetProperties();
 	virtual const FImGuiModuleProperties& GetProperties() const;
 
-	/**
-	 * DEPRECIATED: Please use GetProperties() as this function is scheduled for removal.
-	 * Check whether Input Mode is enabled (tests ImGui.InputEnabled console variable).
-	 *
-	 * @returns True, if Input Mode is enabled (ImGui.InputEnabled != 0) and false otherwise.
-	 */
 	virtual bool IsInputMode() const;
-
-	/**
-	 * DEPRECIATED: Please use GetProperties() as this function is scheduled for removal.
-	 * Set Input Mode state (sets ImGui.InputEnabled console variable, so it can be used together with a console).
-	 *
-	 * @param bEnabled - Whether Input Mode should be enabled (ImGui.InputEnabled = 1) or not (ImGui.InputEnabled = 0).
-	 */
 	virtual void SetInputMode(bool bEnabled);
-
-	/**
-	 * DEPRECIATED: Please use GetProperties() as this function is scheduled for removal.
-	 * Toggle Input Mode state (changes ImGui.InputEnabled console variable).
-	 */
 	virtual void ToggleInputMode();
-
-	/**
-	 * DEPRECIATED: Please use GetProperties() as this function is scheduled for removal.
-	 * Check whether ImGui Demo is shown (tests ImGui.ShowDemo console variable).
-	 *
-	 * @returns True, if demo is shown (ImGui.ShowDemo != 0) and false otherwise.
-	 */
 	virtual bool IsShowingDemo() const;
-
-	/**
-	 * DEPRECIATED: Please use GetProperties() as this function is scheduled for removal.
-	 * Set whether to show ImGui Demo (sets ImGui.ShowDemo console variable, so it can be used together with a console).
-	 *
-	 * @param bShow - Whether to show ImGui Demo (ImGui.ShowDemo = 1) or not (ImGui.ShowDemo = 0).
-	 */
 	virtual void SetShowDemo(bool bShow);
+	virtual void SetGamepadNavigationEnabled(bool bEnabled);
+	virtual void SetKeyboardNavigationEnabled(bool bEnabled);
+	virtual void SetKeyboardInputShared(bool bShared);
+	virtual void SetGamepadInputShared(bool bShared);
+	virtual void SetMouseInputShared(bool bShared);
 
 	/**
 	 * DEPRECIATED: Please use GetProperties() as this function is scheduled for removal.
 	 * Toggle ImGui Demo (changes ImGui.ShowDemo console variable).
 	 */
 	virtual void ToggleShowDemo();
+
 
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;
